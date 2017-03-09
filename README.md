@@ -34,4 +34,4 @@ A 100x100 won by a 4:6:8:2 Dragon-Grass type
 
 A 100x100 won by a 1:11:5:4 Ice-Flying type
 
-[](https://github.com/alambley/PokeSim/blob/master/preview/b.gif?raw=true)
+![](https://github.com/alambley/PokeSim/blob/master/preview/b.gif?raw=true)
