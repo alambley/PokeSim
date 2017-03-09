@@ -29,7 +29,9 @@ I have 16 GB of RAM and and 2000^2 is right around the maximum simulation that I
 Format health:attack:defense:speed type1-type2
 
 A 100x100 won by a 4:6:8:2 Dragon-Grass type
+
 ![](https://github.com/alambley/PokeSim/blob/master/preview/a.gif?raw=true)
 
 A 100x100 won by a 1:11:5:4 Ice-Flying type
+
 [](https://github.com/alambley/PokeSim/blob/master/preview/b.gif?raw=true)
