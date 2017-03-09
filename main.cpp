@@ -308,9 +308,6 @@ int main(int argc, char* argv[]){
     }
   }
 
-  std::cout << sizeof(Pokemon);
-  return 0;
-
   srand (time(NULL));
   TypeMap types;
   std::vector<Pokemon> battleField;

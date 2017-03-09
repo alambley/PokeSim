@@ -20,7 +20,7 @@ struct PokeDamage{
   int damage;
 };
 
-Pokemon::Pokemon(TypeMap *initTypeMap, unsigned short int initPos){
+Pokemon::Pokemon(TypeMap *initTypeMap, unsigned long int initPos){
   attacked = NULL;
   pos = initPos;
   team = initPos;
