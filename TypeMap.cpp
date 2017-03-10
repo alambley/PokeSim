@@ -56,7 +56,7 @@ TypeMap::TypeMap() {
 }
 
 Type TypeMap::getRandomType(){
-  Type temp = typeList[getRandIntTypeMap(0, 14)];
+  Type temp = typeList[getRandIntTypeMap(0, 17)];
   return temp;
 }
 
