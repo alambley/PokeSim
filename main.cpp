@@ -211,7 +211,67 @@ void SaveBitmapToFile( BYTE* pBitmapBits,
     CloseHandle( hFile );
 }
 
-void drawPicture(std::vector<Pokemon>& battlefield, int counter, int square){
+void drawPicture1(std::vector<Pokemon>& battlefield, int counter, int square){
+  int size = square;
+  BYTE* buf = new BYTE[ size * 3 * size ];
+  int c = 0;
+  int pokeCounter = 0;
+  for ( int i = 0; i < size; i++ )
+      {
+          for ( int j = 0; j < size; j++ )
+          {
+              buf[ c + 0 ] = (BYTE) battlefield[pokeCounter].b;
+              buf[ c + 1 ] = (BYTE) battlefield[pokeCounter].g;
+              buf[ c + 2 ] = (BYTE) battlefield[pokeCounter].r;
+
+              c += 3;
+              pokeCounter += 1;
+          }
+      }
+    c += size * 3 * 3;
+
+  SaveBitmapToFile( (BYTE*) buf,
+                  size,
+                  size,
+                  24,
+                  0,
+                  NumberToString(counter) + ".bmp" );
+  delete [] buf;
+}
+
+void drawPicture2(std::vector<Pokemon>& battlefield, int counter, int square){
+  int size = square * 2;
+  BYTE* buf = new BYTE[ size * 3 * size ];
+  int c = 0;
+  int pokeCounter = 0;
+  for ( int i = 0; i < square; i++ )
+  {
+    for ( int j = 0; j < square; j++ )
+    {
+      for(int k = 0; k < 2; k++){
+        std::cout <<  c + k * size * 3 + 0  << "-" <<  c + k * size * 3 + 5  << "\n";
+        buf[ c + k * size * 3 + 0 ] = (BYTE) battlefield[pokeCounter].b;
+        buf[ c + k * size * 3 + 1 ] = (BYTE) battlefield[pokeCounter].g;
+        buf[ c + k * size * 3 + 2 ] = (BYTE) battlefield[pokeCounter].r;
+        buf[ c + k * size * 3 + 3 ] = (BYTE) battlefield[pokeCounter].b;
+        buf[ c + k * size * 3 + 4 ] = (BYTE) battlefield[pokeCounter].g;
+        buf[ c + k * size * 3 + 5 ] = (BYTE) battlefield[pokeCounter].r;
+      }
+      c += 6;
+      pokeCounter++;
+    }
+    c += size * 3;
+  }
+  SaveBitmapToFile( (BYTE*) buf,
+                  size,
+                  size,
+                  24,
+                  0,
+                  NumberToString(counter) + ".bmp" );
+  delete [] buf;
+}
+
+void drawPicture4(std::vector<Pokemon>& battlefield, int counter, int square){
   int size = square * 4;
   BYTE* buf = new BYTE[ size * 3 * size ];
   int c = 0;
@@ -359,7 +419,13 @@ int main(int argc, char* argv[]){
         keepgoing = true;
       }
     }
-    drawPicture(battleField,counter,square);
+    if(square > 0 && square <= 500 ){
+      drawPicture4(battleField,counter,square);
+    }else if(square > 500 & square <= 1000){
+      drawPicture2(battleField,counter,square);
+    }else if(square > 1000){
+      drawPicture1(battleField,counter,square);
+    }
     for(unsigned int refresh = 0; refresh < battleField.size(); refresh++){
       battleField[refresh].canAttack = true;
     }
@@ -400,7 +466,8 @@ int main(int argc, char* argv[]){
   std::setw(2) << std::setfill('0') << ltm->tm_hour << "-" <<
   std::setw(2) << std::setfill('0') << ltm->tm_min << "-" <<
   std::setw(2) << std::setfill('0') << ltm->tm_sec ;
-  std::string cmd = "ffmpeg -framerate 30 -f image2 -i %d.bmp -b 5000k " + oss.str() + ".avi";
+  std::string cmd = " ffmpeg -r 30 -f image2 -s 1920x1080 -i %0d.bmp -vcodec libx264 -crf 25  -pix_fmt yuv420p " + oss.str() + ".mp4";
+
   system(cmd.c_str());
   if(deleteSourceImages){
     system("del *.bmp");
