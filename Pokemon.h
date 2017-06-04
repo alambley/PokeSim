@@ -6,6 +6,12 @@
  *      Author: Alex Lambley
  */
 
+
+#ifndef POKEMON_H_
+#define POKEMON_H_
+
+
+
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
@@ -16,10 +22,12 @@
 #include "TypeMap.h"
 #include <sstream>
 #include <algorithm>
+#include "Log.h"
 
-
-#ifndef POKEMON_H_
-#define POKEMON_H_
+struct winCounterStruct{
+  int count = 0;
+  std::string pokemon;
+};
 
 class Pokemon {
 
@@ -45,11 +53,13 @@ class Pokemon {
     Pokemon(TypeMap*,unsigned long int);
     virtual ~Pokemon();
     std::string print();
-    bool attackPokemon();
+    bool attackPokemon(std::vector<winCounterStruct>&);
     void defeatPokemon(Pokemon);
     bool samePokemon(Pokemon);
-    bool damagePokemon(Pokemon*);
-    int theDamageAlgorithm(Pokemon);
+    bool damagePokemon(Pokemon*,std::vector<winCounterStruct>&);
+    int theDamageAlgorithm(Pokemon,std::vector<winCounterStruct>&,bool);
+    bool chance(float);
+    std::vector<int> getNumbFriends(std::vector<int>);
 
     bool operator < (const Pokemon& str) const{
       return speed > str.speed;

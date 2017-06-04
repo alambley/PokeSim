@@ -7,17 +7,14 @@
  *      Author: Alex Lambley
  */
 
+#ifndef TYPEMAP_H_
+#define TYPEMAP_H_
+
 #include <vector>
 #include <string>
 #include "Type.h"
 #include <iostream>
 #include <stdlib.h>
-
-
-
-#ifndef TYPEMAP_H_
-#define TYPEMAP_H_
-
 
 
 class TypeMap {

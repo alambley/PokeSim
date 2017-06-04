@@ -20,6 +20,15 @@ struct PokeDamage{
   int damage;
 };
 
+template <typename T>
+std::string toString ( T Number )
+{
+   std::ostringstream ss;
+   ss.clear();
+   ss << Number;
+   return ss.str();
+}
+
 Pokemon::Pokemon(TypeMap *initTypeMap, unsigned long int initPos){
   attacked = NULL;
   pos = initPos;
@@ -62,18 +71,20 @@ Pokemon::~Pokemon(){
 }
 
 std::string Pokemon::print(){
+  int originalHealth = 20 - attack - defense - speed;
   std::ostringstream oss;
-  oss << health << ":" << attack << ":" << defense << ":" << speed << ":" << typea.type << "-" << typeb.type;
+  std::vector<int> a;
+  oss << originalHealth << ":" << attack << ":" << defense << ":" << speed << ":" << typea.type << "-" << typeb.type;
   return oss.str();
 }
 
-bool Pokemon::attackPokemon(){
+bool Pokemon::attackPokemon(std::vector<winCounterStruct> &score){
   if(!canAttack){
     return false;
   }
   if(attacked != NULL){
     Pokemon temp = *attacked;
-    return damagePokemon(attacked);
+    return damagePokemon(attacked,score);
   }else{
     std::vector<PokeDamage> findMostDmg;
     for(unsigned int counter = 0; counter < nearby.size(); counter++){
@@ -83,7 +94,7 @@ bool Pokemon::attackPokemon(){
         Pokemon defender = *nearby[counter];
         PokeDamage temp;
         temp.pointer = nearby[counter];
-        temp.damage = theDamageAlgorithm(defender);
+        temp.damage = theDamageAlgorithm(defender,score,false);
         findMostDmg.push_back(temp);
       }
     }
@@ -98,7 +109,7 @@ bool Pokemon::attackPokemon(){
           findMostDmg.erase(findMostDmg.begin() + temp);
         }
       }
-      return damagePokemon(findMostDmg[getRandInt(0, findMostDmg.size()-1)].pointer);
+      return damagePokemon(findMostDmg[getRandInt(0, findMostDmg.size()-1)].pointer,score);
     }
   }
   return false;
@@ -111,9 +122,10 @@ bool Pokemon::samePokemon(Pokemon other){
   return false;
 }
 
-bool Pokemon::damagePokemon(Pokemon* other){
+bool Pokemon::damagePokemon(Pokemon* other,std::vector<winCounterStruct> &score){
   Pokemon defender = *other;
-  int damage = theDamageAlgorithm(defender);
+
+  int damage = theDamageAlgorithm(defender,score,true);
   if(damage > 0){
     attacked = other;
     defender.attacked = this;
@@ -122,6 +134,9 @@ bool Pokemon::damagePokemon(Pokemon* other){
     if(defender.health <= 0){
 
       health += 1;
+
+      score[team].count += 1;
+      score[defender.team].count -= 1;
 
       defender.canAttack = false;
       defender.r = r;
@@ -145,10 +160,38 @@ bool Pokemon::damagePokemon(Pokemon* other){
   }
 }
 
-int Pokemon::theDamageAlgorithm(Pokemon defender){
+int Pokemon::theDamageAlgorithm(Pokemon defender,std::vector<winCounterStruct> &score, bool canCrit){
   TypeMap temp = *typeMap;
-  //std::cout << "debug " << print() << " attacked " << defender.print() << " for " << attack * temp.getDmgMult(typea, defender.typea) * temp.getDmgMult(typea, defender.typeb) - (float)defender.defense / 2 << " damage.\n";
-  //std::cout << attack << " * " << temp.getDmgMult(typea, defender.typea) << " * " << temp.getDmgMult(typea, defender.typeb) << " - " << (float)defender.defense / 2 << "\n";
-  return attack * temp.getDmgMult(typea, defender.typea) * temp.getDmgMult(typea, defender.typeb) - (float)defender.defense / 2;
+  int critMult = 1;
+  if(canCrit){
+    if(chance((double)score[team].count/score.size())){
+      critMult = 2;
+    }
+  }
+  return attack * temp.getDmgMult(typea, defender.typea) * temp.getDmgMult(typea, defender.typeb) * critMult - (float)defender.defense / 2;
+}
+
+bool Pokemon::chance(float prob){
+  float r = ((double) rand() / (RAND_MAX));
+  if(r < prob){
+    return true;
+  }
+  return false;
+}
+
+//this function is OBE, slowed down sim too much
+std::vector<int> Pokemon::getNumbFriends(std::vector<int> friends){
+  for(int counter = 0; counter < nearby.size(); counter++){
+    Pokemon temp = *nearby[counter];
+    if(temp.team == team){
+      if(std::find(friends.begin(), friends.end(), temp.pos) != friends.end()){
+
+      }else{
+        friends.push_back(temp.pos);
+        friends = temp.getNumbFriends(friends);
+      }
+    }
+  }
+  return friends;
 }
 

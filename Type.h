@@ -5,13 +5,15 @@
  *      Author: Alex Lambley
  */
 
-#include <string>
-#include <iostream>
-#include <stdio.h>
+
 
 
 #ifndef TYPE_H_
 #define TYPE_H_
+
+#include <string>
+#include <iostream>
+#include <stdio.h>
 
 class Type {
 public:

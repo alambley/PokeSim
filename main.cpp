@@ -17,9 +17,10 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include "Log.h"
 
 template <typename T>
-  std::string NumberToString ( T Number )
+  std::string toString ( T Number )
   {
      std::ostringstream ss;
      ss.clear();
@@ -235,7 +236,7 @@ void drawPicture1(std::vector<Pokemon>& battlefield, int counter, int square){
                   size,
                   24,
                   0,
-                  NumberToString(counter) + ".bmp" );
+                  toString(counter) + ".bmp" );
   delete [] buf;
 }
 
@@ -249,7 +250,6 @@ void drawPicture2(std::vector<Pokemon>& battlefield, int counter, int square){
     for ( int j = 0; j < square; j++ )
     {
       for(int k = 0; k < 2; k++){
-        std::cout <<  c + k * size * 3 + 0  << "-" <<  c + k * size * 3 + 5  << "\n";
         buf[ c + k * size * 3 + 0 ] = (BYTE) battlefield[pokeCounter].b;
         buf[ c + k * size * 3 + 1 ] = (BYTE) battlefield[pokeCounter].g;
         buf[ c + k * size * 3 + 2 ] = (BYTE) battlefield[pokeCounter].r;
@@ -267,7 +267,7 @@ void drawPicture2(std::vector<Pokemon>& battlefield, int counter, int square){
                   size,
                   24,
                   0,
-                  NumberToString(counter) + ".bmp" );
+                  toString(counter) + ".bmp" );
   delete [] buf;
 }
 
@@ -305,7 +305,7 @@ void drawPicture4(std::vector<Pokemon>& battlefield, int counter, int square){
                   size,
                   24,
                   0,
-                  NumberToString(counter) + ".bmp" );
+                  toString(counter) + ".bmp" );
   delete [] buf;
 }
 
@@ -317,25 +317,25 @@ void debugPrint(std::vector<Pokemon> a){
   std::cout << "\n";
 }
 
-struct winCounterStruct{
-  Pokemon pokemon;
-  int count = 0;
-};
-
 struct speedEngine{
   int pos;
   int speed;
 };
 
 int main(int argc, char* argv[]){
-
   int square = 100;
   bool deleteSourceImages = false;
+  bool createGif = false;
   int maxRounds = -1;
+  int logLevel = 3;
+  int framerate = 30;
 
   for(int argcounter = 1; argcounter < argc; argcounter++){
     if(argv[argcounter] == std::string("-d")){
       deleteSourceImages = true;
+    }
+    else if(argv[argcounter] == std::string("-g")){
+      createGif = true;
     }
     else if(argv[argcounter] == std::string("-c")){
       if(argcounter + 2 <= argc){
@@ -355,11 +355,33 @@ int main(int argc, char* argv[]){
         return 1;
       }
     }
+    else if(argv[argcounter] == std::string("-l")){
+      if(argcounter + 2 <= argc){
+        logLevel = std::atoi(argv[argcounter + 1]);
+        argcounter++;
+      }else{
+        std::cout << "Missing parameter, use -h for help.\n";
+        return 1;
+      }
+    }
+    else if(argv[argcounter] == std::string("-f")){
+          if(argcounter + 2 <= argc){
+            framerate = std::atoi(argv[argcounter + 1]);
+            argcounter++;
+          }else{
+            std::cout << "Missing parameter, use -h for help.\n";
+            return 1;
+          }
+        }
+
     else if(argv[argcounter] == std::string("-h")){
       std::cout << "Help:\n";
       std::cout << "-d = Delete round .bmps after the .mp4 render finishes. (Default:No)\n";
       std::cout << "-c X = Run simulation with a X * X square. (Default:100)\n";
       std::cout << "-x X = Run simulation until round X. (Default:No Limit)\n";
+      std::cout << "-l X = Run simulation with log level X. (Default:3)(0=quiet,1=error,2=warning,3=notify,4=debug,5=trace)\n";
+      std::cout << "-g = Create a .gif as well as .mp4 (Default:No)\n";
+      std::cout << "-f X = Run simulation video with a framerate of X. (Default:30)\n";
       return 0;
     }
     else{
@@ -367,43 +389,65 @@ int main(int argc, char* argv[]){
       return 1;
     }
   }
+  d.changeLogLevel(logLevel);
+
+  d.trace("Starting sim square=" + toString(square));
+  d.trace("Starting sim deleteSourceImages=" + toString(deleteSourceImages));
+  d.trace("Starting sim createGif=" + toString(createGif));
+  d.trace("Starting sim maxRounds=" + toString(maxRounds));
+  d.trace("Starting sim logLevel=" + toString(logLevel));
+  d.trace("Starting sim framerate=" + toString(framerate));
 
   srand (time(NULL));
   TypeMap types;
   std::vector<Pokemon> battleField;
+  std::vector<winCounterStruct> score;
   int pos = 0;
   if(square >= 100){
-    std::cout << "Loading...\n";
+    d.notify("Loading...");
   }
   try{
+    d.debug("Starting Pokemon load into battleField vector...",1);
     for(int counterY = 0; counterY < square; counterY++){
       for(int counterX = 0; counterX < square; counterX++){
-        battleField.push_back(Pokemon(&types,pos));
+        Pokemon tempPoke(&types,pos);
+        int tempScore = 1;
+        battleField.push_back(tempPoke);
+        winCounterStruct tempWinCounterStruct;
+        tempWinCounterStruct.count = 1;
+        tempWinCounterStruct.pokemon = tempPoke.print();
+        score.push_back(tempWinCounterStruct);
+        d.trace("Added Pokemon: " + tempPoke.print() + " with initial score " + toString(tempScore) + " to position " + toString(pos));
         pos++;
       }
     }
   }
   catch(std::bad_alloc){
-    std::cout << "You did not have enough memory to load the entire simulation. Try again with a smaller simulation.\n";
-    return 1;
+    d.error("You did not have enough memory to load the entire simulation. Try again with a smaller simulation.");
   }
+  d.debug("Done with Pokemon load into battleField vector in",1);
   if(square >= 100){
-    std::cout << "Done.\n";
-    std::cout << "Linking...\n";
+    d.notify("Done!");
+    d.notify("Linking...");
   }
+  d.debug("Starting populating each Pokemons nearby pointer vector...",1);
   for(int countera = 0; countera < square * square; countera++){
     std::vector<int> temp = getNearby(battleField[countera].pos, square);
     for(unsigned int counterb = 0; counterb <temp.size(); counterb++){
       battleField[countera].nearby.push_back(& battleField[temp[counterb]]);
     }
   }
+  d.debug("Done populating each Pokemons nearby pointer vector in",1);
   if(square >= 100){
-    std::cout << "Done.\n";
+    d.notify("Done!");
   }
   bool keepgoing = true;
   int counter = 1;
+  d.debug("Starting simulation...",0);
   while(keepgoing){
+    d.debug("Starting turn " + toString(counter) + " ...",1);
     std::vector<speedEngine> howFast;
+    d.debug("Calculating speed for battleField...",2);
     for(int counter = 0; counter < battleField.size(); counter++){
       speedEngine temp;
       temp.pos = counter;
@@ -414,49 +458,49 @@ int main(int argc, char* argv[]){
                     [](speedEngine const & a, speedEngine const & b) -> bool
                     { return a.speed > b.speed; } );
     keepgoing = false;
+    d.debug("Done calculating speed for battleField.",2);
+    d.debug("Starting battle phase...",2);
     for(int maincounter = 0; maincounter < square * square; maincounter++){
-      if(battleField[howFast[maincounter].pos].attackPokemon()){
+      if(battleField[howFast[maincounter].pos].attackPokemon(score)){
+        d.trace("Pokemon " + battleField[howFast[maincounter].pos].print() + " has initiated a successful non-zero attack.");
         keepgoing = true;
       }
     }
-    if(square > 0 && square <= 500 ){
+    d.debug("Done with battle phase.",2);
+    if(square > 0 && square < 500 ){
+      d.debug("Starting a 4x picture...",2);
       drawPicture4(battleField,counter,square);
-    }else if(square > 500 & square <= 1000){
+      d.debug("Done with 4x picture.",2);
+    }else if(square >= 500 & square < 1000){
+      d.debug("Starting a 2x picture...",2);
       drawPicture2(battleField,counter,square);
-    }else if(square > 1000){
+      d.debug("Done with 2x picture.",2);
+    }else if(square >= 1000){
+      d.debug("Starting a 1x picture...",2);
       drawPicture1(battleField,counter,square);
+      d.debug("Done with 1x picture.",2);
     }
+    d.debug("Refreshing battleField for next round...",2);
     for(unsigned int refresh = 0; refresh < battleField.size(); refresh++){
       battleField[refresh].canAttack = true;
     }
-    std::cout << "-----" << counter << "-----\n";
+    d.debug("Done refreshing battleField for next round.",2);
+    d.debug("Done with turn " + toString(counter) + " ...",1);
+    d.notify("-----" + toString(counter) + "-----");
+
     if(counter == maxRounds){
       keepgoing = false;
     }else{
       counter++;
     }
   }
-  bool found;
-  std::vector<winCounterStruct> winCount;
-  for(unsigned int winCounter = 0; winCounter < battleField.size(); winCounter++){
-    found = false;
-    for(unsigned int winCounter2 = 0; winCounter2 < winCount.size(); winCounter2++){
-      if(battleField[winCounter].samePokemon(winCount[winCounter2].pokemon)){
-        winCount[winCounter2].count++;
-        found = true;
-        break;
-      }
-    }
-    if(!found){
-      winCounterStruct temp;
-      temp.pokemon = battleField[winCounter];
-      temp.count = 1;
-      winCount.push_back(temp);
-    }
-  }
-  std::sort(winCount.begin(), winCount.end(),
-                [](winCounterStruct const & a, winCounterStruct const & b) -> bool
-                { return a.count > b.count; } );
+  d.debug("Done with simulation. " + toString(counter) + " rounds in" ,0);
+  d.debug("Counting to see who won...",0);
+  std::sort(score.begin(), score.end(),
+                  [](winCounterStruct const & a, winCounterStruct const & b) -> bool
+                  { return a.count > b.count; } );
+  d.debug("Done counting to see who won.",0);
+
   time_t now = time(0);
   tm *ltm = localtime(&now);
   std::ostringstream oss;
@@ -466,20 +510,28 @@ int main(int argc, char* argv[]){
   std::setw(2) << std::setfill('0') << ltm->tm_hour << "-" <<
   std::setw(2) << std::setfill('0') << ltm->tm_min << "-" <<
   std::setw(2) << std::setfill('0') << ltm->tm_sec ;
-  std::string cmd = " ffmpeg -r 30 -f image2 -s 1920x1080 -i %0d.bmp -vcodec libx264 -crf 25  -pix_fmt yuv420p " + oss.str() + ".mp4";
-
+  std::string cmd = "ffmpeg -r " + toString(framerate) + " -f image2 -s 1920x1080 -i %0d.bmp -vcodec libx264 -crf 25 -pix_fmt yuv420p " + oss.str() + ".mp4 > NUL";
+  d.debug("Executing command: " + cmd);
+  d.debug("Creating mp4...",0);
   system(cmd.c_str());
+  d.debug("Done creating mp4 in ",0);
+  if(createGif){
+    cmd = "ffmpeg -i " + oss.str() + ".mp4 -vf fps=30 " + oss.str() + ".gif > NUL";
+    system(cmd.c_str());
+  }
   if(deleteSourceImages){
     system("del *.bmp");
   }
-  std::cout << "Battle is over after " << counter << " rounds.\n";
-  if(winCount.size() < 3){
-    for(unsigned int counter2 = 0; counter2 < winCount.size(); counter2++){
-      std::cout << "[" << counter2 << "]" << winCount[counter2].pokemon.print() << " (" << ((float)winCount[counter2].count / (square * square)) * 100 << " %)\n";
+  d.notify("Battle is over after " + toString(counter) + " rounds.");
+  if(score.size() < 5){
+    for(unsigned int counter2 = 0; counter2 < score.size(); counter2++){
+      d.notify("[" + toString(counter2) + "]" + score[counter2].pokemon + " (" + toString(((float)score[counter2].count / (square * square)) * 100) + " %)");
     }
   }else{
-    for(unsigned int counter2 = 0; counter2 < 3; counter2++){
-      std::cout << "[" << counter2 << "]" << winCount[counter2].pokemon.print() << " (" << ((float)winCount[counter2].count / (float)(square * square)) * 100.0 << " %)\n";
+    for(unsigned int counter2 = 0; counter2 < 5; counter2++){
+      if(score[counter2].count > 0){
+        d.notify("[" + toString(counter2) + "]" + score[counter2].pokemon + " (" + toString(((float)score[counter2].count / (square * square)) * 100) + " %)");
+      }
     }
   }
 

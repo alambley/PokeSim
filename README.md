@@ -28,7 +28,7 @@ I have 16 GB of RAM and and 2000^2 is right around the maximum simulation that I
 
 Format health:attack:defense:speed type1-type2
 
-A 100x100 won by a 4:6:8:2 Dragon-Grass type
+A 100x100 won by a 3:8:5:5 Water-Dragon type
 
 ![](https://github.com/alambley/PokeSim/blob/master/preview/a.gif?raw=true)
 
