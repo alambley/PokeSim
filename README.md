@@ -17,12 +17,19 @@ g++ -std=c++11  -o PokeSim \*.cpp
 ## Run Parameters
 
 -h        Print this output.
+
 -d        Delete round .bmps after the .mp4 render finishes. (Default:No)
+
 -c X      Run simulation with a X * X square. (Default:100)
+
 -x X      Run simulation until round X. (Default:No Limit)
+
 -l X      Run simulation with log level X. (Default:3)(0=quiet,1=error,2=warning,3=notify,4=debug,5=trace)
+
 -g        Create a .gif as well as .mp4 (Default:No)
+
 -f X      Run simulation video with a framerate of X. (Default:30)
+
 
 ## Current Size
 
