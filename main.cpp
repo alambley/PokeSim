@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "Pokemon.h"
-#include <Windows.h>
+//#include <Windows.h>
 #include <algorithm>
 #include <memory>
 #include <ctime>
@@ -18,6 +18,44 @@
 #include <iostream>
 #include <string>
 #include "Log.h"
+#include <fstream>
+
+#ifdef _WIN32
+std::string deleteCommand = "del";
+std::string pipeNull = "> NUL 2>&1";
+#endif
+
+#ifdef __linux__
+std::string deleteCommand = "rm";
+std::string pipeNull = "> /dev/null 2>&1";
+#endif
+
+typedef unsigned char BYTE;
+typedef unsigned short WORD;
+typedef int LONG;           //int on 64-bit, long on 32-bit
+typedef unsigned int DWORD; //int on 64-bit, long on 32-bit
+
+struct BITMAPFILEHEADER {
+  WORD  bfType;
+  DWORD bfSize;
+  WORD  bfReserved1;
+  WORD  bfReserved2;
+  DWORD bfOffBits;
+}__attribute__((packed));
+
+struct BITMAPINFOHEADER {
+  DWORD biSize;
+  LONG  biWidth;
+  LONG  biHeight;
+  WORD  biPlanes;
+  WORD  biBitCount;
+  DWORD biCompression;
+  DWORD biSizeImage;
+  LONG  biXPelsPerMeter;
+  LONG  biYPelsPerMeter;
+  DWORD biClrUsed;
+  DWORD biClrImportant;
+}__attribute__((packed));
 
 template <typename T>
   std::string toString ( T Number )
@@ -123,6 +161,8 @@ void SaveBitmapToFile( BYTE* pBitmapBits,
                        const unsigned long& padding_size,
                        std::string lpszFileName )
 {
+    DWORD BI_RGB = 0;
+
     // Some basic bitmap parameters
     unsigned long headers_size = sizeof( BITMAPFILEHEADER ) +
                                  sizeof( BITMAPINFOHEADER );
@@ -174,42 +214,63 @@ void SaveBitmapToFile( BYTE* pBitmapBits,
     bfh.bfSize =  headers_size + pixel_data_size;
 
     // Create the file in disk to write
-    HANDLE hFile = CreateFile( lpszFileName.c_str(),
+        std::fstream myfile;
+    myfile = std::fstream(lpszFileName.c_str(), std::ios::out | std::ios::binary);
+
+    /*HANDLE hFile = CreateFile( lpszFileName.c_str(),
                                 GENERIC_WRITE,
                                 0,
                                 NULL,
                                 CREATE_ALWAYS,
                                 FILE_ATTRIBUTE_NORMAL,
-                                NULL );
+                                NULL );*/
 
     // Return if error opening file
-    if( !hFile ) return;
+    //if( !hFile ) return;
 
     DWORD dwWritten = 0;
 
     // Write the File header
-    WriteFile( hFile,
+
+    char* byte_bfh = reinterpret_cast<char*>(&bfh);
+    myfile.write(byte_bfh,sizeof(bfh));
+
+    /*WriteFile( hFile,
                 &bfh,
                 sizeof(bfh),
                 &dwWritten ,
-                NULL );
+                NULL );*/
 
     // Write the bitmap info header
-    WriteFile( hFile,
+
+    char* byte_bmpInfoHeader = reinterpret_cast<char*>(&bmpInfoHeader);
+
+    myfile.write(byte_bmpInfoHeader,sizeof(bmpInfoHeader));
+
+    /*WriteFile( hFile,
                 &bmpInfoHeader,
                 sizeof(bmpInfoHeader),
                 &dwWritten,
-                NULL );
+                NULL );*/
 
     // Write the RGB Data
-    WriteFile( hFile,
+
+    char* byte_pBitmapBits = reinterpret_cast<char*>(pBitmapBits);
+
+    
+
+    myfile.write(byte_pBitmapBits,bmpInfoHeader.biSizeImage);
+
+    /*WriteFile( hFile,
                 pBitmapBits,
                 bmpInfoHeader.biSizeImage,
                 &dwWritten,
-                NULL );
+                NULL );*/
 
     // Close the file handle
-    CloseHandle( hFile );
+
+    myfile.close();
+    //CloseHandle( hFile );
 }
 
 void drawPicture1(std::vector<Pokemon>& battlefield, int counter, int square){
@@ -398,6 +459,12 @@ int main(int argc, char* argv[]){
   d.trace("Starting sim logLevel=" + toString(logLevel));
   d.trace("Starting sim framerate=" + toString(framerate));
 
+  d.trace("SIZEOF:WORD:" + toString(sizeof(WORD)) + "(Needs to be 2)");
+  d.trace("SIZEOF:DWORD:" + toString(sizeof(DWORD)) + "(Needs to be 4)");
+  d.trace("SIZEOF:LONG:" + toString(sizeof(LONG)) + "(Needs to be 4)");
+  d.trace("SIZEOF:BITMAPFILEHEADER:" + toString(sizeof(BITMAPFILEHEADER)) + "(Needs to be 14)");
+  d.trace("SIZEOF:BITMAPINFOHEADER:" + toString(sizeof(BITMAPINFOHEADER)) + "(Needs to be 40)");
+
   srand (time(NULL));
   TypeMap types;
   std::vector<Pokemon> battleField;
@@ -510,17 +577,19 @@ int main(int argc, char* argv[]){
   std::setw(2) << std::setfill('0') << ltm->tm_hour << "-" <<
   std::setw(2) << std::setfill('0') << ltm->tm_min << "-" <<
   std::setw(2) << std::setfill('0') << ltm->tm_sec ;
-  std::string cmd = "ffmpeg -r " + toString(framerate) + " -f image2 -s 1920x1080 -i %0d.bmp -vcodec libx264 -crf 25 -pix_fmt yuv420p " + oss.str() + ".mp4 > NUL";
+  std::string cmd = "ffmpeg -r " + toString(framerate) + " -f image2 -s 1920x1080 -i %0d.bmp -vcodec libx264 -crf 25 -pix_fmt yuv420p " + oss.str() + ".mp4 " + pipeNull;
   d.debug("Executing command: " + cmd);
   d.debug("Creating mp4...",0);
   system(cmd.c_str());
   d.debug("Done creating mp4 in ",0);
   if(createGif){
-    cmd = "ffmpeg -i " + oss.str() + ".mp4 -vf fps=30 " + oss.str() + ".gif > NUL";
+    cmd = "ffmpeg -i " + oss.str() + ".mp4 -vf fps=30 " + oss.str() + ".gif " + pipeNull;
     system(cmd.c_str());
   }
   if(deleteSourceImages){
-    system("del *.bmp");
+    cmd = deleteCommand + " *.bmp";
+    std::cout << cmd << "\n";
+    system(cmd.c_str());
   }
   d.notify("Battle is over after " + toString(counter) + " rounds.");
   if(score.size() < 5){
