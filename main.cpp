@@ -4,11 +4,13 @@
  *  Created on: Feb 19, 2017
  *      Author: Alex Lambley
  */
+#include "Pokemon.h"
+#include "Log.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "Pokemon.h"
+
 //#include <Windows.h>
 #include <algorithm>
 #include <memory>
@@ -17,8 +19,8 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
-#include "Log.h"
 #include <fstream>
+#include <thread>
 
 #ifdef _WIN32
 std::string deleteCommand = "del";
@@ -201,11 +203,11 @@ void SaveBitmapToFile( BYTE* pBitmapBits,
     BITMAPFILEHEADER bfh = {0};
 
     // This value should be values of BM letters i.e 0x4D42
-    // 0x4D = M 0×42 = B storing in reverse order to match with endian
+    // 0x4D = M 0ï¿½42 = B storing in reverse order to match with endian
     bfh.bfType = 0x4D42;
     //bfh.bfType = 'B'+('M' << 8);
 
-    // <<8 used to shift ‘M’ to end  */
+    // <<8 used to shift ï¿½Mï¿½ to end  */
 
     // Offset to the RGBQUAD
     bfh.bfOffBits = headers_size;
@@ -384,12 +386,17 @@ struct speedEngine{
 };
 
 int main(int argc, char* argv[]){
+
+
+  int numbThreads = std::thread::hardware_concurrency();
   int square = 100;
   bool deleteSourceImages = false;
   bool createGif = false;
   int maxRounds = -1;
   int logLevel = 3;
   int framerate = 30;
+  unsigned int seed = 0;
+  bool useSeed = false;
 
   for(int argcounter = 1; argcounter < argc; argcounter++){
     if(argv[argcounter] == std::string("-d")){
@@ -426,15 +433,24 @@ int main(int argc, char* argv[]){
       }
     }
     else if(argv[argcounter] == std::string("-f")){
-          if(argcounter + 2 <= argc){
-            framerate = std::atoi(argv[argcounter + 1]);
-            argcounter++;
-          }else{
-            std::cout << "Missing parameter, use -h for help.\n";
-            return 1;
-          }
-        }
-
+      if(argcounter + 2 <= argc){
+        framerate = std::atoi(argv[argcounter + 1]);
+        argcounter++;
+      }else{
+        std::cout << "Missing parameter, use -h for help.\n";
+        return 1;
+      }
+    }
+    else if(argv[argcounter] == std::string("-s")){
+      if(argcounter + 2 <= argc){
+        useSeed = true;
+        seed = std::atoi(argv[argcounter + 1]);
+        argcounter++;
+      }else{
+        std::cout << "Missing parameter, use -h for help.\n";
+        return 1;
+      }
+    }
     else if(argv[argcounter] == std::string("-h")){
       std::cout << "Help:\n";
       std::cout << "-d = Delete round .bmps after the .mp4 render finishes. (Default:No)\n";
@@ -443,6 +459,7 @@ int main(int argc, char* argv[]){
       std::cout << "-l X = Run simulation with log level X. (Default:3)(0=quiet,1=error,2=warning,3=notify,4=debug,5=trace)\n";
       std::cout << "-g = Create a .gif as well as .mp4 (Default:No)\n";
       std::cout << "-f X = Run simulation video with a framerate of X. (Default:30)\n";
+      std::cout << "-s X = Run simulation with a seed of X. (Default:random)\n";
       return 0;
     }
     else{
@@ -458,6 +475,11 @@ int main(int argc, char* argv[]){
   d.trace("Starting sim maxRounds=" + toString(maxRounds));
   d.trace("Starting sim logLevel=" + toString(logLevel));
   d.trace("Starting sim framerate=" + toString(framerate));
+  d.trace("Starting sim using seed=" + toString(useSeed));
+  if(useSeed){
+    d.trace("Starting sim using seed value=" + toString(seed));
+  }
+  d.trace("Starting sim with threads=" + toString(numbThreads));
 
   d.trace("SIZEOF:WORD:" + toString(sizeof(WORD)) + "(Needs to be 2)");
   d.trace("SIZEOF:DWORD:" + toString(sizeof(DWORD)) + "(Needs to be 4)");
@@ -465,7 +487,11 @@ int main(int argc, char* argv[]){
   d.trace("SIZEOF:BITMAPFILEHEADER:" + toString(sizeof(BITMAPFILEHEADER)) + "(Needs to be 14)");
   d.trace("SIZEOF:BITMAPINFOHEADER:" + toString(sizeof(BITMAPINFOHEADER)) + "(Needs to be 40)");
 
-  srand (time(NULL));
+  if(useSeed){
+    srand (seed);
+  }else{
+    srand (time(NULL));
+  }
   TypeMap types;
   std::vector<Pokemon> battleField;
   std::vector<winCounterStruct> score;
