@@ -179,6 +179,16 @@ bool Pokemon::chance(float prob){
   return false;
 }
 
+bool Pokemon::adjacentToSameSpeed(){
+  for(unsigned int counter = 0; counter < nearby.size(); counter++){
+    Pokemon temp = *nearby[counter];
+    if (temp.speed == speed){
+      return true;
+    }
+  }
+  return false;
+}
+
 //this function is OBE, slowed down sim too much
 std::vector<int> Pokemon::getNumbFriends(std::vector<int> friends){
   for(int counter = 0; counter < nearby.size(); counter++){

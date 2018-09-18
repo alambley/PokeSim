@@ -385,10 +385,16 @@ struct speedEngine{
   int speed;
 };
 
+bool positiveDamageOccurred = false;
+void threadRoundDamage(){
+
+}
+
 int main(int argc, char* argv[]){
 
 
   int numbThreads = std::thread::hardware_concurrency();
+  int desiredThreads = numbThreads;
   int square = 100;
   bool deleteSourceImages = false;
   bool createGif = false;
@@ -451,6 +457,20 @@ int main(int argc, char* argv[]){
         return 1;
       }
     }
+    else if(argv[argcounter] == std::string("-t")){
+      if(argcounter + 2 <= argc){    
+        int temp = std::atoi(argv[argcounter + 1]);
+        if(0 < temp && temp <= numbThreads){
+          desiredThreads = temp;
+        }else{
+          desiredThreads = numbThreads;
+        }
+        argcounter++;
+      }else{
+        std::cout << "Missing parameter, use -h for help.\n";
+        return 1;
+      }
+    }
     else if(argv[argcounter] == std::string("-h")){
       std::cout << "Help:\n";
       std::cout << "-d = Delete round .bmps after the .mp4 render finishes. (Default:No)\n";
@@ -460,6 +480,7 @@ int main(int argc, char* argv[]){
       std::cout << "-g = Create a .gif as well as .mp4 (Default:No)\n";
       std::cout << "-f X = Run simulation video with a framerate of X. (Default:30)\n";
       std::cout << "-s X = Run simulation with a seed of X. (Default:random)\n";
+      std::cout << "-t X = Run simulation with X number of threads. (Default:all available)\n";
       return 0;
     }
     else{
@@ -469,23 +490,23 @@ int main(int argc, char* argv[]){
   }
   d.changeLogLevel(logLevel);
 
-  d.trace("Starting sim square=" + toString(square));
-  d.trace("Starting sim deleteSourceImages=" + toString(deleteSourceImages));
-  d.trace("Starting sim createGif=" + toString(createGif));
-  d.trace("Starting sim maxRounds=" + toString(maxRounds));
-  d.trace("Starting sim logLevel=" + toString(logLevel));
-  d.trace("Starting sim framerate=" + toString(framerate));
-  d.trace("Starting sim using seed=" + toString(useSeed));
+  d.debug("Starting sim square=" + toString(square));
+  d.debug("Starting sim deleteSourceImages=" + toString(deleteSourceImages));
+  d.debug("Starting sim createGif=" + toString(createGif));
+  d.debug("Starting sim maxRounds=" + toString(maxRounds));
+  d.debug("Starting sim logLevel=" + toString(logLevel));
+  d.debug("Starting sim framerate=" + toString(framerate));
+  d.debug("Starting sim using seed=" + toString(useSeed));
   if(useSeed){
-    d.trace("Starting sim using seed value=" + toString(seed));
+    d.debug("Starting sim using seed value=" + toString(seed));
   }
-  d.trace("Starting sim with threads=" + toString(numbThreads));
+  d.debug("Starting sim with threads=" + toString(desiredThreads));
 
-  d.trace("SIZEOF:WORD:" + toString(sizeof(WORD)) + "(Needs to be 2)");
-  d.trace("SIZEOF:DWORD:" + toString(sizeof(DWORD)) + "(Needs to be 4)");
-  d.trace("SIZEOF:LONG:" + toString(sizeof(LONG)) + "(Needs to be 4)");
-  d.trace("SIZEOF:BITMAPFILEHEADER:" + toString(sizeof(BITMAPFILEHEADER)) + "(Needs to be 14)");
-  d.trace("SIZEOF:BITMAPINFOHEADER:" + toString(sizeof(BITMAPINFOHEADER)) + "(Needs to be 40)");
+  d.debug("SIZEOF:WORD:" + toString(sizeof(WORD)) + "(Needs to be 2)");
+  d.debug("SIZEOF:DWORD:" + toString(sizeof(DWORD)) + "(Needs to be 4)");
+  d.debug("SIZEOF:LONG:" + toString(sizeof(LONG)) + "(Needs to be 4)");
+  d.debug("SIZEOF:BITMAPFILEHEADER:" + toString(sizeof(BITMAPFILEHEADER)) + "(Needs to be 14)");
+  d.debug("SIZEOF:BITMAPINFOHEADER:" + toString(sizeof(BITMAPINFOHEADER)) + "(Needs to be 40)");
 
   if(useSeed){
     srand (seed);
@@ -553,6 +574,13 @@ int main(int argc, char* argv[]){
     keepgoing = false;
     d.debug("Done calculating speed for battleField.",2);
     d.debug("Starting battle phase...",2);
+
+    std::vector<int> speedDelim;
+    int lastSpeed = 1000000;
+    for(int speedDelimCounter = 0; speedDelimCounter < square * square; speedDelimCounter++){
+      
+    }
+
     for(int maincounter = 0; maincounter < square * square; maincounter++){
       if(battleField[howFast[maincounter].pos].attackPokemon(score)){
         d.trace("Pokemon " + battleField[howFast[maincounter].pos].print() + " has initiated a successful non-zero attack.");

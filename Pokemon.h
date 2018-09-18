@@ -60,6 +60,7 @@ class Pokemon {
     int theDamageAlgorithm(Pokemon,std::vector<winCounterStruct>&,bool);
     bool chance(float);
     std::vector<int> getNumbFriends(std::vector<int>);
+    bool adjacentToSameSpeed();
 
     bool operator < (const Pokemon& str) const{
       return speed > str.speed;
