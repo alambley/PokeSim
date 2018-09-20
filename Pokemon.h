@@ -61,6 +61,7 @@ class Pokemon {
     bool chance(float);
     std::vector<int> getNumbFriends(std::vector<int>);
     bool adjacentToSameSpeed();
+    bool adjacentToSameSpeedSpace(short, long);
 
     bool operator < (const Pokemon& str) const{
       return speed > str.speed;

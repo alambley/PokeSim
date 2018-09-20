@@ -74,7 +74,7 @@ std::string Pokemon::print(){
   int originalHealth = 20 - attack - defense - speed;
   std::ostringstream oss;
   std::vector<int> a;
-  oss << "["<< pos << "]" <<originalHealth << ":" << attack << ":" << defense << ":" << speed << ":" << typea.type << "-" << typeb.type;
+  oss << "["<< pos << "]" << "["<< team << "]" << originalHealth << ":" << attack << ":" << defense << ":" << speed << ":" << typea.type << "-" << typeb.type;
   return oss.str();
 }
 
@@ -183,7 +183,21 @@ bool Pokemon::adjacentToSameSpeed(){
   Pokemon temp;
   for(unsigned int counter = 0; counter < nearby.size(); counter++){
     temp = *nearby[counter];
-    if (temp.speed == speed){
+    if (temp.adjacentToSameSpeedSpace(speed,pos)){
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Pokemon::adjacentToSameSpeedSpace(short speedToMatch, long posToIgnore){
+  if (speed == speedToMatch){
+    return true;
+  }
+  Pokemon temp;
+  for(unsigned int counter = 0; counter < nearby.size(); counter++){
+    temp = *nearby[counter];
+    if (temp.speed == speedToMatch && temp.pos != posToIgnore){
       return true;
     }
   }

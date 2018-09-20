@@ -617,12 +617,13 @@ int main(int argc, char* argv[]){
                 addTo = 0;
               }
             }
+            threadPool[0].join();
             for(int tempIter = 0; tempIter < desiredThreads - 1; tempIter++){
               // d.debug("starting nonadjacent thread at pos " + toString(threadPos));
               threadPool[threadPos++] = std::thread(threadRoundDamage, temp[tempIter], std::ref(battleField), std::ref(score));
               // d.debug("test " + toString(threadPos));
             }
-            for(int tempIter = 0; tempIter < desiredThreads; tempIter++){
+            for(int tempIter = 1; tempIter < desiredThreads; tempIter++){
               threadPool[tempIter].join();
             }
             d.debug("end " + toString(notAdjacentToSameSpeed.size() + adjacentToSameSpeed.size()));
