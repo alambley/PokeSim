@@ -220,3 +220,7 @@ std::string Log::prettyTime(int time) {
     return toString(time/3600000) + "h " + toString(time%3600000/60000) + "m " + toString(time%3600000%60000/1000) + "s";
   }
 }
+
+int Log::getLogLevel(){
+  return logLevel;
+}

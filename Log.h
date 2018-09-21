@@ -39,6 +39,7 @@ public:
   void trace(std::string,int);
   void changeLogLevel(int);
   std::string prettyTime(int);
+  int getLogLevel();
 
 private:
   int logLevel;

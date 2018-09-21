@@ -17,6 +17,7 @@ Pokemon::Pokemon(){
 
 struct PokeDamage{
   Pokemon * pointer;
+  int pos;
   int damage;
 };
 
@@ -29,10 +30,11 @@ std::string toString ( T Number )
    return ss.str();
 }
 
-Pokemon::Pokemon(TypeMap *initTypeMap, unsigned long int initPos){
+Pokemon::Pokemon(TypeMap *initTypeMap, unsigned long int initPos, bool initStrictDeterministicMode){
   attacked = NULL;
   pos = initPos;
   team = initPos;
+  strictDeterministicMode = initStrictDeterministicMode;
   health = 1;
   attack = 1;
   defense = 1;
@@ -80,10 +82,12 @@ std::string Pokemon::print(){
 
 bool Pokemon::attackPokemon(std::vector<winCounterStruct> &score){
   if(!canAttack){
+    d.debug("camel[" + toString(pos) + "][" + toString(team) + "] couldn't attack");
     return false;
   }
   if(attacked != NULL){
     Pokemon temp = *attacked;
+    d.debug("camel[" + toString(pos) + "][" + toString(team) + "] responded to attack from [" + toString(temp.pos) + "][" + toString(temp.team) + "]");
     return damagePokemon(attacked,score);
   }else{
     std::vector<PokeDamage> findMostDmg;
@@ -94,6 +98,7 @@ bool Pokemon::attackPokemon(std::vector<winCounterStruct> &score){
         Pokemon defender = *nearby[counter];
         PokeDamage temp;
         temp.pointer = nearby[counter];
+        temp.pos = defender.pos;
         temp.damage = theDamageAlgorithm(defender,score,false);
         findMostDmg.push_back(temp);
       }
@@ -107,9 +112,18 @@ bool Pokemon::attackPokemon(std::vector<winCounterStruct> &score){
       for(int temp = 0; temp < findMostDmg.size(); temp++){
         if(findMostDmg[temp].damage < highestdamage){
           findMostDmg.erase(findMostDmg.begin() + temp);
+          temp--;
         }
       }
-      return damagePokemon(findMostDmg[getRandInt(0, findMostDmg.size()-1)].pointer,score);
+      int decisionRank = 0;
+      if(strictDeterministicMode){
+        //stay zero
+      }else{
+        int decisionRank = getRandInt(0, findMostDmg.size()-1);
+      }
+      Pokemon attackDecision = *findMostDmg[decisionRank].pointer;
+      d.debug("camel[" + toString(pos) + "][" + toString(team) + "] decided to attack [" + toString(attackDecision.pos) + "][" + toString(attackDecision.team) + "]");
+      return damagePokemon(findMostDmg[decisionRank].pointer,score);
     }
   }
   return false;
@@ -164,8 +178,12 @@ int Pokemon::theDamageAlgorithm(Pokemon defender,std::vector<winCounterStruct> &
   TypeMap temp = *typeMap;
   int critMult = 1;
   if(canCrit){
-    if(chance((double)score[team].count/score.size())){
-      critMult = 2;
+    if(strictDeterministicMode){
+      critMult = 1 + (double)score[team].count/score.size();
+    }else{
+      if(chance((double)score[team].count/score.size())){
+        critMult = 2;
+      }
     }
   }
   return attack * temp.getDmgMult(typea, defender.typea) * temp.getDmgMult(typea, defender.typeb) * critMult - (float)defender.defense / 2;
@@ -183,6 +201,9 @@ bool Pokemon::adjacentToSameSpeed(){
   Pokemon temp;
   for(unsigned int counter = 0; counter < nearby.size(); counter++){
     temp = *nearby[counter];
+    // if(speed == temp.speed){
+    //   return true;
+    // }
     if (temp.adjacentToSameSpeedSpace(speed,pos)){
       return true;
     }

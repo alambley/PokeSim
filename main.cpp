@@ -392,10 +392,10 @@ std::mutex damMutex;
 void threadRoundDamage(std::vector<int> listOfElements, std::vector<Pokemon> &battleField, std::vector<winCounterStruct> &score){
   for(int iter = 0; iter < listOfElements.size(); iter++){
     if(battleField[listOfElements[iter]].attackPokemon(score)){
-      damMutex.lock();
       positiveDamageOccurred = true;
-      damMutex.unlock();
       d.trace("Pokemon " + battleField[listOfElements[iter]].print() + " has initiated a successful non-zero attack.");
+    }else{
+      d.trace("Pokemon " + battleField[listOfElements[iter]].print() + " was blocked.");
     }
   }
 }
@@ -535,7 +535,7 @@ int main(int argc, char* argv[]){
     d.debug("Starting Pokemon load into battleField vector...",1);
     for(int counterY = 0; counterY < square; counterY++){
       for(int counterX = 0; counterX < square; counterX++){
-        Pokemon tempPoke(&types,pos);
+        Pokemon tempPoke(&types,pos,true);
         int tempScore = 1;
         battleField.push_back(tempPoke);
         winCounterStruct tempWinCounterStruct;
@@ -569,7 +569,7 @@ int main(int argc, char* argv[]){
   int counter = 1;
   d.debug("Starting simulation...",0);
   while(positiveDamageOccurred){
-    d.debug("Starting turn " + toString(counter) + " ...",1);
+    d.debug("camelStarting turn " + toString(counter) + " ...",1);
     std::vector<speedEngine> howFast;
     d.debug("Calculating speed for battleField...",2);
     for(int counter = 0; counter < battleField.size(); counter++){
@@ -589,14 +589,12 @@ int main(int argc, char* argv[]){
     int lastSpeed = 1000000;
 
     if(desiredThreads > 1){
+      positiveDamageOccurred = false;
       for(int speedDelimCounter = 0; speedDelimCounter < square * square; speedDelimCounter++){
         adjacentToSameSpeed.push_back(howFast[speedDelimCounter].pos);
         if(battleField[howFast[speedDelimCounter].pos].speed < lastSpeed || speedDelimCounter == (square * square) - 1){
           lastSpeed = battleField[howFast[speedDelimCounter].pos].speed;
-          if(speedDelimCounter != 0){
-            d.debug("start");
-            d.debug("begin " + toString(adjacentToSameSpeed.size()));
-            positiveDamageOccurred = false;
+          if(speedDelimCounter != 0){  
             int threadPos = 0;
             for(int notAdjacentIter = 0; notAdjacentIter < adjacentToSameSpeed.size(); notAdjacentIter++){
               if(!battleField[adjacentToSameSpeed[notAdjacentIter]].adjacentToSameSpeed()){      
@@ -617,19 +615,14 @@ int main(int argc, char* argv[]){
                 addTo = 0;
               }
             }
-            threadPool[0].join();
             for(int tempIter = 0; tempIter < desiredThreads - 1; tempIter++){
-              // d.debug("starting nonadjacent thread at pos " + toString(threadPos));
               threadPool[threadPos++] = std::thread(threadRoundDamage, temp[tempIter], std::ref(battleField), std::ref(score));
-              // d.debug("test " + toString(threadPos));
             }
-            for(int tempIter = 1; tempIter < desiredThreads; tempIter++){
+            for(int tempIter = 0; tempIter < desiredThreads; tempIter++){
               threadPool[tempIter].join();
             }
-            d.debug("end " + toString(notAdjacentToSameSpeed.size() + adjacentToSameSpeed.size()));
             adjacentToSameSpeed.clear();
             notAdjacentToSameSpeed.clear();
-            d.debug("finish");
           }
         }
       }
@@ -665,14 +658,16 @@ int main(int argc, char* argv[]){
     }
     d.debug("Done refreshing battleField for next round.",2);
     d.debug("Done with turn " + toString(counter) + " ...",1);
-    // d.notify("-----" + toString(counter) + "-----");
+    if(d.getLogLevel() == 3){
+      std::cout << "\r" << counter << std::flush;
+    }
 
     if(counter == maxRounds){
       positiveDamageOccurred = false;
     }else{
       counter++;
     }
-    // exit(0);
+    
   }
   d.debug("Done with simulation. " + toString(counter) + " rounds in" ,0);
   d.debug("Counting to see who won...",0);

@@ -48,9 +48,10 @@ class Pokemon {
     TypeMap* typeMap;
     std::vector<Pokemon*> nearby;
     Pokemon* attacked;
+    bool strictDeterministicMode;
 
     Pokemon();
-    Pokemon(TypeMap*,unsigned long int);
+    Pokemon(TypeMap*,unsigned long int, bool);
     virtual ~Pokemon();
     std::string print();
     bool attackPokemon(std::vector<winCounterStruct>&);
